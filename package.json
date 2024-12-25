@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "cypress": "^13.17.0"
+  },
+  "scripts": {
+    "cy:update": "npm install cypress@latest",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run"
+  }
+}

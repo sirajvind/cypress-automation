@@ -1,0 +1,43 @@
+# Node Modules
+node_modules/
+.npm/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+.nprmc
+secrets.json
+
+# Playwright Specific
+playwright-report/
+test-results/
+screenshots/
+trace/
+playwright/.cache/
+
+# Cypress Specific
+cypress/screenshots/
+cypress/videos/
+
+# IDE and Editor Files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Output and Coverage Files
+dist/
+coverage/

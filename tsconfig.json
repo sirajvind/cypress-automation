@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["es5", "dom"],
+    "types": ["cypress", "node"],
+    "allowJs": true,
+    "moduleResolution": "node",
+    "strict": true,
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["cypress/**/*.ts", "cypress/**/*.js", "cypress/**/*.jsx", "cypress/**/*.tsx"]
+}

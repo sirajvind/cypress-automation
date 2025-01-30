@@ -31,6 +31,9 @@ playwright/.cache/
 # Cypress Specific
 cypress/screenshots/
 cypress/videos/
+cypress/reports/
+mochawesome-report/
+mochawesome.json
 
 # IDE and Editor Files
 .idea/
@@ -41,3 +44,6 @@ cypress/videos/
 # Output and Coverage Files
 dist/
 coverage/
+
+# Cypress env
+cypress.env.json

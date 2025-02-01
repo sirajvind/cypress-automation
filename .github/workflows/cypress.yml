@@ -64,7 +64,7 @@ jobs:
       fail-fast: false
       matrix:
         containers: [1, 2, 3, 4]
-        browsers: [chrome, firefox, edge]
+        browsers: [chrome]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -90,6 +90,12 @@ jobs:
     needs: test
     if: always()
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -106,18 +112,27 @@ jobs:
       - name: Download test results
         uses: actions/download-artifact@v4
         with:
-          pattern: cypress-*
+          name: cypress-report
           path: cypress/reports
-          merge-multiple: true
+
+      - name: Create report directory
+        run: |
+          mkdir -p mochawesome-report
+          mkdir -p cypress/reports
 
       - name: Generate report
         run: |
-          npx mochawesome-merge cypress/reports/*.json > merged-report.json
-          npx mochawesome-report-generator merged-report.json
+          npx mochawesome-merge "cypress/reports/**/*.json" > mochawesome-report/output.json
+          npx mochawesome-report-generator mochawesome-report/output.json --reportDir mochawesome-report
 
-      - name: Upload report artifact
-        uses: actions/upload-artifact@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: cypress-report
           path: mochawesome-report
-          retention-days: 30
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

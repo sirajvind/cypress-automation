@@ -40,19 +40,16 @@ jobs:
       options: --user 1001
     steps:
       - uses: actions/checkout@v4
-      - name: Set npm cache directory
-        run: npm config set cache ~/.npm --global
       - uses: actions/setup-node@v4
         with:
           node-version: "18"
-      - name: Cache dependencies
+          cache: "npm"
+      - name: Cache Cypress binary
         uses: actions/cache@v3
         with:
-          path: |
-            ~/.npm
-            ~/.cache/Cypress
-          key: deps-${{ hashFiles('package-lock.json') }}
-          restore-keys: deps-
+          path: ~/.cache/Cypress
+          key: cypress-${{ hashFiles('package-lock.json') }}
+          restore-keys: cypress-
       - name: Install dependencies
         env:
           CYPRESS_CACHE_FOLDER: "${{ github.workspace }}/.cache/Cypress"
@@ -79,6 +76,9 @@ jobs:
     needs: install
     if: success()
     runs-on: ubuntu-latest
+    container:
+      image: cypress/browsers:latest
+      options: --user 1001
     strategy:
       fail-fast: false
       matrix:
@@ -92,18 +92,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "18"
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.npm
-            ~/.cache/Cypress
-          key: deps-${{ hashFiles('package-lock.json') }}
-          restore-keys: deps-
+          cache: "npm"
       - name: Install dependencies
         run: npm ci
-      - name: Create reports directory
-        run: mkdir -p cypress/reports
       - name: Run Cypress tests
         env:
           CYPRESS_AUTOMATENOW_URL: ${{ secrets.AUTOMATENOW_URL }}
@@ -113,6 +104,7 @@ jobs:
           SPLIT_INDEX: ${{ strategy.job-index }}
           COMMIT_INFO_MESSAGE: ${{github.event.pull_request.title}}
           COMMIT_INFO_SHA: ${{github.event.pull_request.head.sha}}
+          CYPRESS_CACHE_FOLDER: "${{ github.workspace }}/.cache/Cypress"
         run: npx cypress run --browser ${{ matrix.browsers }} --headless --record true --tag ${{ github.ref_name }} --key ${{ secrets.CYPRESS_RECORD_KEY }}
       - name: Save test results
         if: always()
@@ -125,6 +117,9 @@ jobs:
     needs: test
     if: always() && needs.test.result != 'skipped'
     runs-on: ubuntu-latest
+    container:
+      image: cypress/browsers:latest
+      options: --user 1001
     permissions:
       pages: write
       id-token: write
@@ -132,8 +127,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Download workspace
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: workspace
           path: .
@@ -144,18 +138,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "18"
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.npm
-            ~/.cache/Cypress
-          key: deps-${{ hashFiles('package-lock.json') }}
-          restore-keys: deps-
+          cache: "npm"
       - name: Install dependencies
         run: npm ci
-      - name: Install report dependencies
-        run: npm install -g mochawesome-merge mochawesome-report-generator
       - name: Generate HTML report
         run: |
           npx mochawesome-merge 'test-results/test-results-*-*/cypress/reports/*.json' > merged-report.json

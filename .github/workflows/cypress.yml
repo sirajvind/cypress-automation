@@ -86,6 +86,14 @@ jobs:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Save test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-report-${{ matrix.browsers }}-${{ matrix.containers }}
+          path: cypress/reports
+          retention-days: 1
+
   report:
     needs: test
     if: always()
@@ -112,8 +120,9 @@ jobs:
       - name: Download test results
         uses: actions/download-artifact@v4
         with:
-          name: cypress-report
+          pattern: cypress-report-*
           path: cypress/reports
+          merge-multiple: true
 
       - name: Create report directory
         run: |

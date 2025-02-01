@@ -7,172 +7,73 @@ on:
     branches: [main]
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-      - run: npm ci
-      - run: npx tsc --noEmit
-      - run: npm run lint
-      - run: npx prettier --check .
-
   install:
-    needs: check
-    if: success()
-    runs-on: ubuntu-latest
-    container:
-      image: cypress/browsers:latest
-      options: --user 1001
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # Setup node with npm cache
-      - uses: actions/setup-node@v4
+      - name: Cypress install
+        uses: cypress-io/github-action@v6
         with:
-          node-version: "18"
-          cache: "npm"
+          runTests: false
+          build: npm run lint
 
-      # Cache Cypress binary
-      - name: Get npm cache directory
-        id: npm-cache-dir
-        run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v4
-        id: npm-cache
-        with:
-          path: |
-            ${{ steps.npm-cache-dir.outputs.dir }}
-            /root/.cache/Cypress
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-cypress
-          restore-keys: |
-            ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-
-            ${{ runner.os }}-node-
-
-      # Install dependencies
-      - name: Install dependencies
-        run: |
-          npm ci
-          npx cypress install
-          npx cypress verify
-          npx cypress cache list
-
-      # Create workspace artifact
-      - name: Create workspace
-        run: |
-          mkdir -p cypress/reports
-          tar czf workspace.tar.gz \
-            package.json \
-            package-lock.json \
-            cypress.config.ts \
-            tsconfig.json \
-            cypress/ \
-            node_modules/
-
-      # Save workspace as artifact
       - name: Save workspace
         uses: actions/upload-artifact@v4
         with:
           name: workspace
-          path: workspace.tar.gz
-          retention-days: 1
+          if-no-files-found: error
+          path: |
+            package.json
+            package-lock.json
+            cypress.config.ts
+            tsconfig.json
+            cypress/
 
-  test:
+  cypress-run:
     needs: install
-    if: success()
-    runs-on: ubuntu-latest
-    container:
-      image: cypress/browsers:latest
-      options: --user 1001
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         containers: [1, 2, 3, 4]
         browsers: [chrome]
     steps:
-      # Download and extract workspace
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download workspace
         uses: actions/download-artifact@v4
         with:
           name: workspace
 
-      - name: Extract workspace
-        run: tar xzf workspace.tar.gz
-
-      # Run tests
-      - name: Run Cypress tests
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          browser: ${{ matrix.browsers }}
+          record: true
+          parallel: true
+          group: "UI-${{ matrix.browsers }}"
         env:
           CYPRESS_AUTOMATENOW_URL: ${{ secrets.AUTOMATENOW_URL }}
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SPLIT: ${{ strategy.job-total }}
-          SPLIT_INDEX: ${{ strategy.job-index }}
-        run: npx cypress run --browser ${{ matrix.browsers }} --headless --record true --tag ${{ github.ref_name }} --key ${{ secrets.CYPRESS_RECORD_KEY }}
-
-      # Save test results
-      - name: Save test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ matrix.browsers }}-${{ matrix.containers }}
-          path: cypress/reports
-          retention-days: 1
 
   report:
-    needs: test
-    if: always() && needs.test.result != 'skipped'
-    runs-on: ubuntu-latest
-    container:
-      image: cypress/browsers:latest
-      options: --user 1001
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    needs: cypress-run
+    if: always()
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-
-      # Download workspace
-      - name: Download workspace
-        uses: actions/download-artifact@v4
-        with:
-          name: workspace
-
-      - name: Extract workspace
-        run: tar xzf workspace.tar.gz
-
-      # Download test results
       - name: Download test results
         uses: actions/download-artifact@v4
         with:
-          path: test-results
-          pattern: test-results-*
+          pattern: cypress-*
+          path: cypress/reports
+          merge-multiple: true
 
-      # Generate report
-      - name: Generate HTML report
+      - name: Generate report
         run: |
-          npx mochawesome-merge 'test-results/test-results-*/cypress/reports/*.json' > merged-report.json
-          npx mochawesome-report-generator merged-report.json --reportDir mochawesome-report
-
-      # Upload report artifacts
-      - name: Upload report artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-test-report
-          path: mochawesome-report
-          retention-days: 1
-
-      # Deploy to GitHub Pages
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: mochawesome-report
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          npm ci
+          npx mochawesome-merge cypress/reports/*.json > merged-report.json
+          npx mochawesome-report-generator merged-report.json

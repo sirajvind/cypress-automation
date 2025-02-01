@@ -29,18 +29,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Setup node without caching
+      # Cache Cypress binary
+      - name: Cache Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/Cypress
+            ~/.npm
+          key: cypress-cache-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            cypress-cache-${{ runner.os }}-
+
+      # Setup node with caching
       - uses: actions/setup-node@v4
         with:
           node-version: "18"
+          cache: "npm"
 
-      # Install dependencies
-      - name: Install dependencies
-        run: npm ci
-
-      # Verify Cypress
-      - name: Verify Cypress
-        run: npx cypress verify
+      # Install dependencies and verify Cypress
+      - name: Install dependencies and verify
+        run: |
+          npm ci
+          npx cypress verify
+          npx cypress cache list
 
       # Create workspace artifact
       - name: Create workspace

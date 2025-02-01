@@ -14,14 +14,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "18"
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.npm
-            ~/.cache/Cypress
-          key: deps-${{ hashFiles('package-lock.json') }}
-          restore-keys: deps-
       - name: Install dependencies
         run: npm ci
       - name: Check types
@@ -40,10 +32,13 @@ jobs:
       options: --user 1001
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: "18"
           cache: "npm"
+          cache-dependency-path: package-lock.json
       - name: Cache Cypress binary
         uses: actions/cache@v3
         with:
@@ -71,6 +66,7 @@ jobs:
           name: workspace
           path: |
             .
+            package-lock.json
             /github/home/.cache/Cypress
             !node_modules
             !.git
@@ -97,6 +93,7 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
+          cache-dependency-path: package-lock.json
       - name: Cache Cypress binary
         uses: actions/cache@v3
         with:

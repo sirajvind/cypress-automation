@@ -40,15 +40,11 @@ jobs:
       options: --user 1001
     steps:
       - uses: actions/checkout@v4
+      - name: Set npm cache directory
+        run: npm config set cache ~/.npm --global
       - uses: actions/setup-node@v4
         with:
           node-version: "18"
-      - name: Fix permissions
-        run: |
-          mkdir -p ~/.npm
-          chown -R 1001:1001 ~/.npm
-          mkdir -p ~/.cache
-          chown -R 1001:1001 ~/.cache
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
@@ -58,13 +54,17 @@ jobs:
           key: deps-${{ hashFiles('package-lock.json') }}
           restore-keys: deps-
       - name: Install dependencies
-        run: npm ci
+        env:
+          CYPRESS_CACHE_FOLDER: "${{ github.workspace }}/.cache/Cypress"
+        run: |
+          npm ci
+          npm cache verify
       - name: Verify Cypress
+        env:
+          CYPRESS_CACHE_FOLDER: "${{ github.workspace }}/.cache/Cypress"
         run: npx cypress verify
       - name: Setup report directory
-        run: |
-          mkdir -p cypress/reports
-          chmod -R 777 cypress/reports
+        run: mkdir -p cypress/reports
       - name: Save workspace
         uses: actions/upload-artifact@v4
         with:

@@ -39,9 +39,16 @@ jobs:
       image: cypress/browsers:latest
       options: --user 1001
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "18"
+      - name: Fix permissions
+        run: |
+          mkdir -p ~/.npm
+          chown -R 1001:1001 ~/.npm
+          mkdir -p ~/.cache
+          chown -R 1001:1001 ~/.cache
       - name: Cache dependencies
         uses: actions/cache@v3
         with:

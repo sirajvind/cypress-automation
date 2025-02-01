@@ -55,7 +55,7 @@ jobs:
           chmod -R 777 cypress/reports
       # Save the entire workspace including node_modules
       - name: Save workspace
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: workspace
           path: |
@@ -91,7 +91,7 @@ jobs:
         run: npx cypress run --browser ${{ matrix.browsers }} --parallel --record --key ${{ secrets.CYPRESS_RECORD_KEY }}
       - name: Save test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.browsers }}-${{ matrix.containers }}
           path: cypress/reports
@@ -116,7 +116,7 @@ jobs:
           npx mochawesome-merge 'test-results/test-results-*/cypress/reports/*.json' > merged-report.json
           npx mochawesome-report-generator merged-report.json --reportDir mochawesome-report
       - name: Upload consolidated report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cypress-test-report
           path: mochawesome-report

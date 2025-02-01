@@ -93,7 +93,7 @@ jobs:
           SPLIT_INDEX: ${{ strategy.job-index }}
           COMMIT_INFO_MESSAGE: ${{github.event.pull_request.title}}
           COMMIT_INFO_SHA: ${{github.event.pull_request.head.sha}}
-        run: npx cypress run --browser ${{ matrix.browsers }} --parallel --record --key ${{ secrets.CYPRESS_RECORD_KEY }} --retries 2
+        run: npx cypress run --browser ${{ matrix.browsers }} --headless --parallel --record true --tag ${{ github.ref_name }} --key ${{ secrets.CYPRESS_RECORD_KEY }}
       - name: Save test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -121,6 +121,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: test-results
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install report dependencies
+        run: npm install mochawesome-merge mochawesome-report-generator
       - name: Generate HTML report
         run: |
           npx mochawesome-merge 'test-results/test-results-*/cypress/reports/*.json' > merged-report.json

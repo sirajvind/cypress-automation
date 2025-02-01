@@ -34,7 +34,9 @@ jobs:
     needs: check
     if: success()
     runs-on: ubuntu-latest
-    container: cypress/browsers:node18.12.0-chrome107-ff106
+    container:
+      image: cypress/browsers:latest
+      options: --user 1001
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v3
@@ -42,18 +44,16 @@ jobs:
           path: |
             ~/.npm
             ~/.cache/Cypress
-          key: cypress-${{ hashFiles('package-lock.json') }}
+          key: cypress-${{ hashFiles('package-lock.json') }}-v1
           restore-keys: cypress-
       - name: Install dependencies
         run: npm ci
       - name: Verify Cypress
         run: npx cypress verify
-      # Pre-generate mochawesome directory to ensure proper permissions
       - name: Setup report directory
         run: |
           mkdir -p cypress/reports
           chmod -R 777 cypress/reports
-      # Save the entire workspace including node_modules
       - name: Save workspace
         uses: actions/upload-artifact@v4
         with:
@@ -72,7 +72,6 @@ jobs:
       matrix:
         containers: [1, 2, 3, 4]
         browsers: [chrome, firefox, edge]
-    container: cypress/browsers:node18.12.0-chrome107-ff106
     steps:
       - name: Download workspace
         uses: actions/download-artifact@v3
@@ -88,7 +87,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SPLIT: ${{ strategy.job-total }}
           SPLIT_INDEX: ${{ strategy.job-index }}
-        run: npx cypress run --browser ${{ matrix.browsers }} --parallel --record --key ${{ secrets.CYPRESS_RECORD_KEY }}
+        run: npx cypress run --browser ${{ matrix.browsers }} --parallel --record --key ${{ secrets.CYPRESS_RECORD_KEY }} --retries 2
       - name: Save test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -100,7 +99,12 @@ jobs:
     needs: test
     if: always() && needs.test.result != 'skipped'
     runs-on: ubuntu-latest
-    container: cypress/browsers:node18.12.0-chrome107-ff106
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download workspace
         uses: actions/download-artifact@v3
@@ -120,3 +124,12 @@ jobs:
         with:
           name: cypress-test-report
           path: mochawesome-report
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: mochawesome-report
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

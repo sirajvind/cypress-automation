@@ -47,18 +47,21 @@ jobs:
       - name: Cache Cypress binary
         uses: actions/cache@v3
         with:
-          path: ~/.cache/Cypress
-          key: cypress-${{ hashFiles('package-lock.json') }}
-          restore-keys: cypress-
+          path: |
+            /github/home/.cache/Cypress
+            ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            cypress-${{ runner.os }}-
       - name: Install dependencies
         env:
-          CYPRESS_CACHE_FOLDER: "${{ github.workspace }}/.cache/Cypress"
+          CYPRESS_CACHE_FOLDER: "/github/home/.cache/Cypress"
         run: |
           npm ci
           npm cache verify
       - name: Verify Cypress
         env:
-          CYPRESS_CACHE_FOLDER: "${{ github.workspace }}/.cache/Cypress"
+          CYPRESS_CACHE_FOLDER: "/github/home/.cache/Cypress"
         run: npx cypress verify
       - name: Setup report directory
         run: mkdir -p cypress/reports
@@ -68,6 +71,7 @@ jobs:
           name: workspace
           path: |
             .
+            /github/home/.cache/Cypress
             !node_modules
             !.git
             !.github
@@ -93,6 +97,15 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
+      - name: Cache Cypress binary
+        uses: actions/cache@v3
+        with:
+          path: |
+            /github/home/.cache/Cypress
+            ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            cypress-${{ runner.os }}-
       - name: Install dependencies
         run: npm ci
       - name: Run Cypress tests
@@ -104,7 +117,7 @@ jobs:
           SPLIT_INDEX: ${{ strategy.job-index }}
           COMMIT_INFO_MESSAGE: ${{github.event.pull_request.title}}
           COMMIT_INFO_SHA: ${{github.event.pull_request.head.sha}}
-          CYPRESS_CACHE_FOLDER: "${{ github.workspace }}/.cache/Cypress"
+          CYPRESS_CACHE_FOLDER: "/github/home/.cache/Cypress"
         run: npx cypress run --browser ${{ matrix.browsers }} --headless --record true --tag ${{ github.ref_name }} --key ${{ secrets.CYPRESS_RECORD_KEY }}
       - name: Save test results
         if: always()

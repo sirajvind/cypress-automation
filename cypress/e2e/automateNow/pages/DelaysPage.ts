@@ -26,7 +26,7 @@ class DelaysPage extends BasePage {
   verifyLiftoffText(): void {
     cy.get(this.selectors.delayInput.primary, { timeout: 12000 })
       .should('be.visible')
-      .should(($input) => {
+      .should($input => {
         const value = $input.val()
         expect(value).to.equal('Liftoff!')
       })

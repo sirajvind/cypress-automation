@@ -29,27 +29,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Cache Cypress binary
-      - name: Cache Cypress binary
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/Cypress
-            ~/.npm
-          key: cypress-cache-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            cypress-cache-${{ runner.os }}-
-
-      # Setup node with caching
+      # Setup node with npm cache
       - uses: actions/setup-node@v4
         with:
           node-version: "18"
           cache: "npm"
 
-      # Install dependencies and verify Cypress
-      - name: Install dependencies and verify
+      # Cache Cypress binary
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: |
+            ${{ steps.npm-cache-dir.outputs.dir }}
+            /root/.cache/Cypress
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-cypress
+          restore-keys: |
+            ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-node-
+
+      # Install dependencies
+      - name: Install dependencies
         run: |
           npm ci
+          npx cypress install
           npx cypress verify
           npx cypress cache list
 

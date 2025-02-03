@@ -14,7 +14,7 @@
     "mochawesome-merge": "^4.3.0",
     "mochawesome-report-generator": "^6.2.0",
     "prettier": "^3.2.2",
-    "typescript": "^4.9.5"
+    "typescript": "^5.7.3"
   },
   "scripts": {
     "cy:update": "npm install cypress@latest",

@@ -133,6 +133,7 @@ jobs:
         run: |
           npx mochawesome-merge "cypress/reports/**/*.json" > mochawesome-report/output.json
           npx mochawesome-report-generator mochawesome-report/output.json --reportDir mochawesome-report
+          mv mochawesome-report/output.html mochawesome-report/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -145,3 +146,7 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Display Report URL
+        run: |
+          echo "Cypress Test Report is available at: ${{ steps.deployment.outputs.page_url }}"

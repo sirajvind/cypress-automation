@@ -3,7 +3,9 @@
     "target": "es5",
     "lib": ["es5", "dom"],
     "types": ["cypress", "node"],
+    "outDir": "./dist",
     "allowJs": true,
+    "noEmit": true,
     "moduleResolution": "node",
     "strict": true,
     "baseUrl": ".",
@@ -11,5 +13,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["cypress/**/*.ts", "cypress/**/*.js", "cypress/**/*.jsx", "cypress/**/*.tsx"]
+  "include": ["cypress/**/*.ts", "cypress/**/*.js", "cypress/**/*.jsx", "cypress/**/*.tsx"],
+  "exclude": ["./dist/**/*"]
 }

@@ -15,4 +15,5 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': 'error',
     '@typescript-eslint/explicit-function-return-type': 'warn',
   },
+  ignorePatterns: ['cypress/reports/**'],
 }

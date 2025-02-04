@@ -16,6 +16,8 @@ export default defineConfig({
       overwrite: true,
       html: true,
       json: true,
+      reportFilename: '[status]_[datetime]-[name]-report',
+      timestamp: 'longDate',
     },
   },
   retries: {

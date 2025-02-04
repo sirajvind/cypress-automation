@@ -64,7 +64,7 @@ jobs:
       fail-fast: false
       matrix:
         containers: [1, 2, 3, 4]
-        browsers: [chrome]
+        browsers: [chrome, firefox, edge]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -133,7 +133,7 @@ jobs:
         run: |
           npm run merge:reports
           npm run generate:report
-          mv cypress/reports/index.html mochawesome-report/
+          mv cypress/reports/* mochawesome-report/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

@@ -1,0 +1,152 @@
+name: Cypress Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run check:format
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+  install:
+    needs: check
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cypress install
+        uses: cypress-io/github-action@v6
+        with:
+          runTests: false
+          build: npm run lint
+
+      - name: Save workspace
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace
+          if-no-files-found: error
+          path: |
+            package.json
+            package-lock.json
+            cypress.config.ts
+            tsconfig.json
+            cypress/
+
+  test:
+    needs: install
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        containers: [1, 2, 3, 4]
+        browsers: [chrome, firefox, edge]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download workspace
+        uses: actions/download-artifact@v4
+        with:
+          name: workspace
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          browser: ${{ matrix.browsers }}
+          record: true
+          parallel: true
+          group: "UI-${{ matrix.browsers }}"
+        env:
+          CYPRESS_AUTOMATENOW_URL: ${{ secrets.AUTOMATENOW_URL }}
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-report-${{ matrix.browsers }}-${{ matrix.containers }}
+          path: cypress/reports
+          retention-days: 1
+
+  report:
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cypress-report-*
+          path: cypress/reports
+          merge-multiple: true
+
+      - name: Create report directory
+        run: |
+          mkdir -p mochawesome-report
+          mkdir -p cypress/reports
+
+      - name: Generate report
+        run: |
+          npm run merge:reports
+          npm run generate:report
+          mv cypress/reports/* mochawesome-report/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: mochawesome-report
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Display Report URL
+        run: |
+          echo "Cypress Test Report is available at: ${{ steps.deployment.outputs.page_url }}"
